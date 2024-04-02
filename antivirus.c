@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
         printf("%s %s\n", file_arr[0], file_arr[1]);
         for (i = 0; i < file_num; i++)
         {
+            //printf("%s\n", file_arr[i]);
             free(file_arr[i]);
         }
         free(file_arr);

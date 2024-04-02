@@ -26,7 +26,6 @@ void status_update(int type,  char *message) {
 }
 
 char *construct_file_path(const char *directory,const char *addition){
-    char *path;
     char *new_path;
 
     if (directory == NULL || addition == NULL)
@@ -35,30 +34,21 @@ char *construct_file_path(const char *directory,const char *addition){
         status_update(1, "Application Ended");
         exit(1);
     }
-
-    path = (char *) malloc(strlen(directory)+1);
-    if (path == NULL)
-    {
-        status_update(1, "Memory Allocation Failed");
-        status_update(1, "Application Ended");
-        exit(1);
-    }
-    strcpy(path, directory);
-
     
-    if (path[strlen(path)-1] == '/') //compare the last char of the string
+    if (directory[strlen(directory)-1] == '/') //compare the last char of the string
     {
-        new_path = (char *)realloc(path, strlen(path) + strlen(addition) + 1);
+        new_path = (char *)malloc(strlen(directory) + strlen(addition) + 1);
         if (new_path == NULL)
         {
             status_update(1, "Memory Reallocation Failed");
             status_update(1, "Application Ended");
             exit(1);
         }
+        strcpy(new_path, directory);
         strcat(new_path, addition);
     } else {
 
-        new_path = (char *)realloc(path, strlen(path) + strlen(addition) + 2);
+        new_path = (char *) malloc(strlen(directory) + strlen(addition) + 2);
         if (new_path == NULL)
         {
             status_update(1, "Memory Reallocation Failed");
@@ -66,6 +56,7 @@ char *construct_file_path(const char *directory,const char *addition){
             exit(1);
         }
         
+        strcpy(new_path, directory);
         strcat(new_path, "/");
         strcat(new_path, addition);
     }
@@ -88,7 +79,7 @@ int scan_dir(const char *directory, char ***file_arr) {
         status_update(1, "Application Ended");
         exit(1);
     }
-    
+
     while ((file = readdir(dir)) != NULL) /*While we have not reached the end of the directory tree*/
     {
         if (file->d_type == DT_DIR) {
@@ -105,7 +96,7 @@ int scan_dir(const char *directory, char ***file_arr) {
             file_path = construct_file_path(directory, file->d_name);
             (*file_arr)[file_num++] = file_path;
 
-            *file_arr = (char **)realloc(*file_arr, sizeof(char *)*file_num+1); /*add additional space in the array for 1 char pointer*/
+            *file_arr = (char **)realloc(*file_arr, sizeof(char *)*(file_num+1)); /*add additional space in the array for 1 char pointer*/
             if (*file_arr == NULL)
             {
                 status_update(1, "Memory Reallocation Failed");
