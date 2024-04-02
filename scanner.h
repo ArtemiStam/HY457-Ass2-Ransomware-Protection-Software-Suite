@@ -15,6 +15,6 @@ static const char *MONTH_STRING[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
 
 void status_update(int type,  char *message); 
 char *construct_file_path(const char *directory, const char *addition);
-char **scan_dir(const char *directory, char **file_arr);
+int scan_dir(const char *directory, char ***file_arr);
 
 #endif

@@ -72,8 +72,8 @@ char *construct_file_path(const char *directory,const char *addition){
     return new_path;
 }
 
-char **scan_dir(const char *directory, char **file_arr) {
-    DIR *dir = opendir(directory); /*Open directory and get pointer to directory stream*/
+int scan_dir(const char *directory, char ***file_arr) {
+    DIR *dir;
     struct dirent *file;
     char *file_path;
     char *dir_path;
@@ -81,21 +81,14 @@ char **scan_dir(const char *directory, char **file_arr) {
     //char **new_ptr;
     static int file_num = 0;
 
+    dir = opendir(directory); /*Open directory and get pointer to directory stream*/
     if (dir == NULL || directory == NULL) /*opendir return NULL on error*/
     {
         status_update(1, "Directory opening failed");
         status_update(1, "Application Ended");
         exit(1);
     }
-
-    /*ptr = (char **) malloc(sizeof(char *));
-    if (ptr == NULL)
-    {
-        status_update(1, "Memory Allocation Failed");
-        status_update(1, "Application Ended");
-        exit(1);
-    }*/
-    //file = readdir(dir); /*get a pointer to the dirent structure of the next directory entry*/
+    
     while ((file = readdir(dir)) != NULL) /*While we have not reached the end of the directory tree*/
     {
         if (file->d_type == DT_DIR) {
@@ -103,18 +96,17 @@ char **scan_dir(const char *directory, char **file_arr) {
             if (strcmp(file->d_name, ".") && strcmp(file->d_name, "..")) {
                 dir_path = construct_file_path(directory, file->d_name);
 
-                file_arr = scan_dir(dir_path, file_arr);
-                //file_arr = ptr;
-                //free(dir_path);
+                scan_dir(dir_path, file_arr);
+                free(dir_path);
             }
 
         } else if (file->d_type == DT_REG) {
            
             file_path = construct_file_path(directory, file->d_name);
-            file_arr[file_num++] = file_path;
+            (*file_arr)[file_num++] = file_path;
 
-            file_arr = (char **)realloc(file_arr, sizeof(char *)*file_num+1); /*add additional space in the array for 1 char pointer*/
-            if (file_arr == NULL)
+            *file_arr = (char **)realloc(*file_arr, sizeof(char *)*file_num+1); /*add additional space in the array for 1 char pointer*/
+            if (*file_arr == NULL)
             {
                 status_update(1, "Memory Reallocation Failed");
                 status_update(1, "Application Ended");
@@ -124,5 +116,6 @@ char **scan_dir(const char *directory, char **file_arr) {
         }
     }
     
-    return file_arr;
+    closedir(dir);
+    return file_num;
 }
