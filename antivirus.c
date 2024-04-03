@@ -33,11 +33,14 @@ int main(int argc, char* argv[]) {
         printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Scanning directory %s\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, argv[2]);
         file_num = scan_dir(argv[2], &file_arr); 
         printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Found %d files\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, file_num);
+        
         /*Search all the files in the filepath*/
-        printf("%s %s\n", file_arr[0], file_arr[1]);
+        infection_scan(file_arr, file_num);
+        
+        
+        /*Free file array*/
         for (i = 0; i < file_num; i++)
         {
-            //printf("%s\n", file_arr[i]);
             free(file_arr[i]);
         }
         free(file_arr);
