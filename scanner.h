@@ -10,6 +10,9 @@
 #include <sys/types.h> /*Needed to recognise 'DIR' type*/
 #include <dirent.h>    /*Needed for functions opendir(), readdir()*/
 #include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/md5.h>
+
 
 
 /*----------------------Utils------------------------*/
