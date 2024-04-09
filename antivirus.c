@@ -12,8 +12,10 @@ int main(int argc, char* argv[]) {
     struct tm date = *localtime(&t);
     char **file_arr;
     char **str_array;
-    char **paths_to_strings;
-    int file_num = 0, i=0, str_num = 0;
+    char **addresses;
+    int  *paths_to_strings;
+    int *paths;
+    int file_num = 0, i=0, str_num = 0, addr_num = 0;
     
     if (argc != 3)
     {
@@ -65,22 +67,25 @@ int main(int argc, char* argv[]) {
         
         /*Search all the files in the filepath t find the regex*/
         str_array = (char **) malloc(sizeof(char *)); /*Intialize file array with space for 1 file pointer*/
-        paths_to_strings = (char **) malloc(sizeof(char *));
-        if (str_array == NULL || paths_to_strings == NULL)
+        paths_to_strings = (int *) malloc(sizeof(int));
+        addresses = (char **) malloc(sizeof(char *)); 
+        paths = (int *) malloc(sizeof(int));
+        if (str_array == NULL || paths_to_strings == NULL || addresses == NULL || paths == NULL)
         {
             status_update(1, "Memory Allocation Failed");
             status_update(1, "Application Ended");
             exit(1);
         }
 
-        str_num = inspection_scan(file_arr, file_num, &str_array, &paths_to_strings);
-        
-        for (i = 0; i < str_num; i++)
+
+        str_num = inspection_scan(file_arr, file_num, &str_array, &paths_to_strings, &addresses, &paths);
+        /*addr_num = extract_addresses(str_array, &addresses, str_num);
+        for (i = 0; i < addr_num; i++)
         {
-            printf("%s\n", paths_to_strings[i]);
-            printf("%s\n", str_array[i]);
+            //printf("%s\n", file_arr[paths_to_strings[i]]);
+            printf("%s\n", addresses[i]);
         }
-        
+        printf("%d\n",addr_num);*/
         /*Free file and string array*/
         for (i = 0; i < file_num; i++)
         {
@@ -88,12 +93,13 @@ int main(int argc, char* argv[]) {
         }
         free(file_arr);
 
-        for (i = 0; i < str_num; i++)
+        /*for (i = 0; i < str_num; i++)
         {
             free(str_array[i]);
         }
         free(str_array);
         free(paths_to_strings);
+        free(paths);*/
 
        /*No need to free paths of strings because they contain the pointers from file_array
        we just need to free the paths_to_strings ptr*/

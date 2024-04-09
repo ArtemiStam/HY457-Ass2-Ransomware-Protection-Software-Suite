@@ -14,6 +14,7 @@
 #include <openssl/md5.h>
 #include <regex.h>
 
+
 /*----------------------Utils------------------------*/
 /* String to print the name of the month */
 //static const char *MONTH_STRING[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -23,7 +24,7 @@ void status_update(int type,  char *message);
 char *construct_file_path(const char *directory, const char *addition);
 int scan_dir(const char *directory, char ***file_arr);
 void infection_scan(char** file_array, int file_num);
-int search_bytes(const char *file, const char *bytes);
+int search_bytes(const char *file, const char *bytes, int num_bytes);
 
 /*-----------------Hashing----------------------------*/
 unsigned char *SHA256_file(const char *file);

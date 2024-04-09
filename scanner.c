@@ -120,12 +120,13 @@ void infection_scan(char** file_array, int file_num) {
     const char *MD5_malicious_lib =    "\x85\x57\x8c\xd4\x40\x4c\x6d\x58\x6c\xd0\xae\x1b\x36\xc9\x8a\xca";
     const char *SHA256_malicious_lib = "\xd5\x6d\x67\xf2\xc4\x34\x11\xd9\x66\x52\x5b\x32\x50\xbf\xaa\x1a\x85\xdb\x34\xbf\x37\x14\x68\xdf\x1b\x6a\x98\x82\xfe\xe7\x88\x49";
     const char *bitcoin_wallet =       "bc1qa5wkgaew2dkv56kfvj49j0av5nml45x9ek9hz6";
-    const char *virus_signature =      "\x98\x1d\x00\x00\xec\x33\xff\xff\xfb\x06\x00\x00\x00\x46\x0e\x10";
+    const char *virus_signature =      "\x98\x1d\x00\x00\xec\x33\xff\xff\xfb\x06\x00\x00\x00\x46\x0e\x10";  //{0x98,0x1D,0x00,0x00,0xEC,0x33,0xFF,0xFF,0xFB,0x06,0x00,0x00,0x00,0x46,0x0E,0x10,0}; //const char virus_signature[16] = {'\x98','\x1d','\x00','\x00','\xec','\x33','\xff','\xff','\xfb','\x06','\x00','\x00','\x00','\x46','\x0e','\x10'};
+    //const char this[] = {'\x98','\x1d','\x00','\x00','\xec','\x33','\xff','\xff','\xfb','\x06','\x00','\x00','\x00','\x46','\x0e','\x10'};
     //"981d0000ec33ffff06000000460e10";
     //const char SHA256_malicious_lib[] = "d56d67f2c43411d966525b3250bfaa1a85db34bf371468df1b6a9882fee78849";
     //printf("MALICIOUS SHA256: %s\n", SHA256_malicious_lib);
     //printf("MALICIOUS MD5: %s\n", MD5_malicious_lib);
-    
+    //printf("%ld\n", sizeof(virus_signature)/sizeof(virus_signature[0]));
     status_update(0, "Scanning...");
     infected_array = (char **) malloc(sizeof(char *));
     if (infected_array == NULL)
@@ -142,7 +143,7 @@ void infection_scan(char** file_array, int file_num) {
        md5_hash = (char *)MD5_file(file_array[i]); 
        
        //Step 2: Search for the signature of the known virus
-        if (search_bytes(file_array[i], virus_signature))
+        if (search_bytes(file_array[i], virus_signature, 16))
         {
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[3]) + 1);
             if (infected_file_update == NULL)
@@ -165,7 +166,7 @@ void infection_scan(char** file_array, int file_num) {
         }
         
        //Step 3: Search for the reported Bitcoin address
-       if (search_bytes(file_array[i], bitcoin_wallet))
+       if (search_bytes(file_array[i], bitcoin_wallet, strlen(bitcoin_wallet)))
         {
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[2]) + 1);
             if (infected_file_update == NULL)
@@ -386,7 +387,7 @@ unsigned char *MD5_file(const char *file) {
     return hash;
 }
 
-int search_bytes(const char *file, const char *bytes) {
+int search_bytes(const char *file, const char *bytes, int num_bytes) {
     FILE *fp;
     char *buffer;
     int i = 0, bytes_in_file = 0, bytes_read = 0, index = 0;
@@ -438,20 +439,25 @@ int search_bytes(const char *file, const char *bytes) {
         if (buffer[i] == bytes[index])
         {
             index++;
+            if (index == num_bytes)
+            {
+                free(buffer);
+                return 1;
+            }
         } else {
-            if (index == strlen(bytes))
+            /*if (index == num_bytes)
             {
                 break;
-            }
+            }*/
             
             index = 0;
         }
     }
     
     free(buffer);
-    if (index == strlen(bytes))
+    /*if (index == num_bytes)
     {
         return 1;
-    }
+    }*/
     return 0;
 }

@@ -16,7 +16,7 @@ CFLAGS = -Wall -pedantic
 all: antivirus
 
 antivirus: antivirus.o scanner.o inspector.o
-	$(CC) $(CFLAGS) $^ -lcrypto -o antivirus
+	$(CC) $(CFLAGS) $^ -lcrypto -lcurl -o antivirus
 
 scan:
 	./antivirus scan /home/artemi/hy457/assignment2/Target/
