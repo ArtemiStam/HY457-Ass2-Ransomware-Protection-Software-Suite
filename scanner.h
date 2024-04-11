@@ -3,21 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openssl/md2.h>
-#include <openssl/sha.h>
-#include <time.h>
-#include <unistd.h> /*Needed for function getppid()*/
-#include <sys/types.h> /*Needed to recognise 'DIR' type*/
-#include <dirent.h>    /*Needed for functions opendir(), readdir()*/
-#include <openssl/sha.h>
-#include <openssl/evp.h>
-#include <openssl/md5.h>
-#include <regex.h>
-
+#include <time.h>         /*Needed to print time in output prompt*/
+#include <unistd.h>       /*Needed for function getppid()*/
+#include <sys/types.h>    /*Needed to recognise 'DIR' type*/
+#include <dirent.h>       /*Needed for functions opendir(), readdir()*/
+#include <openssl/sha.h>  /*Needed for SHA256 hashing*/
+#include <openssl/md5.h>  /*Needed for MD5 hashing*/
 
 /*----------------------Utils------------------------*/
-/* String to print the name of the month */
-//static const char *MONTH_STRING[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+static const char *MONTH_STRING[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}; /* String to print the name of the month */
 void status_update(int type,  char *message); 
 
 /*---------------------------------------------------*/

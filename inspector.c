@@ -12,11 +12,6 @@ struct Memory {
 
 size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
 {
-    /*size_t realsize = size * nmemb;
-    char **response = (char **)userdata;
-    *response = (char *)malloc(realsize + 1);
-    memcpy(*response, (char *)data, realsize);
-    return realsize;*/
     size_t realsize = size * nmemb;
     struct Memory *mem = (struct Memory *)userdata;
 
@@ -37,6 +32,11 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
 {
     int i = 0, j = 0, total_strs = 0, str_num = 0, addr_num = 0;
     int *malicious_addr;
+    time_t t = time(NULL);
+    struct tm date = *localtime(&t);
+    char *file_name;
+    char *string;
+    int  length = 0;
 
     if (file_array == NULL || str_array == NULL || paths_to_strings == NULL || addresses == NULL || paths == NULL)
     {
@@ -45,6 +45,7 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
         exit(1);
     }
 
+    status_update(0, "Searching...");
     for (i = 0; i < file_num; i++) /*Get the strings from every file*/
     {
         if ((str_num = extract_strings(file_array[i], str_array, total_strs)) > 0) /*add strings to str_array*/
@@ -76,19 +77,44 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
     free(*str_array);
     free(*paths_to_strings); 
     
-
     malicious_addr = malloc(sizeof(int) * addr_num);
     /*Using CURLlib to do a GET request*/
     for (i = 0; i < addr_num; i++)
     {
         malicious_addr[i] = check_malicious((*addresses)[i]);
     }
+    status_update(0, "Operation finished");
+    printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Processed %d files.\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, file_num);
 
+    /*Print output*/
+    printf("\n| %-20s | %-80s | %-50s| %-10s |\n", "FILE", "PATH", "DOMAIN", "RESULT");
+    printf("============================================================================================================================================================================\n");
+    /*for (i = 0; i < addr_num; i++) {
+        printf("%s\n", file_array[(*paths)[i]]);
+    }*/
     for (i = 0; i < addr_num; i++)
     {
         //printf("%s\n", file_array[(*paths)[i]]);
-        printf("%s\n", (*addresses)[i]);
-        printf("Malicious: %d\n", malicious_addr[i]);
+        //printf("%s\n", (*addresses)[i]);
+        //printf("Malicious: %d\n", malicious_addr[i]);
+        length = strlen(file_array[(*paths)[i]]);   
+        string = malloc(length+1);
+
+        strcpy(string, file_array[(*paths)[i]]);
+        if (string[length-1] == '/')
+        {
+            string[length-1] = '\0';
+        }
+        file_name = strrchr(string, '/');
+        if (file_name == NULL)
+        {
+            status_update(1, "strrchr Function Failed");
+            status_update(1, "Application Ended");
+            exit(1);
+        }
+        file_name[0] = '\0';
+        printf("| %-20s | %-80s | %-50s| %-10s |\n", file_name+1, string, (*addresses)[i], malicious_addr[i] ? "\033[0;31mMalicious\033[0m " : "Safe");
+        free(string);
     }
 
     for (i = 0; i < addr_num; i++)
@@ -97,6 +123,8 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
     }
     free(*addresses);
     free(*paths);
+    //free(*paths_to_strings);
+    free(malicious_addr);
     return total_strs;
     /*After we get the strings we need to use regexto get domains*/
 }
@@ -276,8 +304,8 @@ int extract_addresses(char **str_array, char ***addresses, int str_num, int *pat
             // offset = pmatch[0].rm_so + (s - buf);
             // printf("address = %s\n",s + pmatch[0].rm_so);
             length = pmatch[0].rm_eo - pmatch[0].rm_so;
-            if (!check_duplicates(*addresses, s + pmatch[0].rm_so, addr_num, length))
-            {
+            //if (!check_duplicates(*addresses, s + pmatch[0].rm_so, addr_num, length))
+            //{
                 (*paths)[addr_num] = paths_to_strings[i];
                 (*addresses)[addr_num] = malloc(length + 1);
                 (*addresses)[addr_num][length] = '\0';
@@ -291,7 +319,7 @@ int extract_addresses(char **str_array, char ***addresses, int str_num, int *pat
                     exit(1);
                 }
                 // s += pmatch[0].rm_eo;
-            }
+            //}
             s += pmatch[0].rm_eo;
             // s += pmatch[0].rm_eo;
             // printf("offset = %jd; length = %jd\n", (intmax_t)offset, (intmax_t)length);

@@ -5,7 +5,6 @@
 #include "scanner.h"
 #include "inspector.h"
 
-static const char *MONTH_STRING[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 int main(int argc, char* argv[]) {
     time_t t = time(NULL);
@@ -15,7 +14,7 @@ int main(int argc, char* argv[]) {
     char **addresses;
     int  *paths_to_strings;
     int *paths;
-    int file_num = 0, i=0, str_num = 0, addr_num = 0;
+    int file_num = 0, i=0, str_num = 0;
     
     if (argc != 3)
     {
@@ -58,7 +57,7 @@ int main(int argc, char* argv[]) {
             status_update(1, "Application Ended");
             exit(1);
         }
-       
+        
         /*Find all the files in the filepath*/
         status_update(0, "Application Started");
         printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Scanning directory %s\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, argv[2]);
@@ -92,13 +91,13 @@ int main(int argc, char* argv[]) {
             free(file_arr[i]);
         }
         free(file_arr);
-
-        /*for (i = 0; i < str_num; i++)
+        /*free(paths_to_strings);
+        for (i = 0; i < str_num; i++)
         {
             free(str_array[i]);
         }
-        free(str_array);
-        free(paths_to_strings);
+        free(str_array);*/
+        /*free(paths_to_strings);
         free(paths);*/
 
        /*No need to free paths of strings because they contain the pointers from file_array

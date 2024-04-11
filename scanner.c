@@ -1,7 +1,6 @@
 #define _GNU_SOURCE // includes _BSD_SOURCE for dt_type in dirent struct that is returned from readdir().
 #include "scanner.h"
 
-static const char *MONTH_STRING[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 /*
 This function prints a status update about the state of the antivitus.
 Input: 
@@ -13,16 +12,17 @@ void status_update(int type,  char *message) {
     time_t t = time(NULL);
     struct tm date = *localtime(&t);
 
-    if (type == 1)
+    if (type == 1) //ERROR message
     {
         fprintf(stderr, "\033[0;31m[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] %s\033[0m\n", "ERROR", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, message);
     }
-    else if (type == 0)
+    else if (type == 0) //INFO message
     {
         printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] %s\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, message);
     }
 }
 
+/*Takes a path to a directory and addition information to append to the path*/
 char *construct_file_path(const char *directory,const char *addition){
     char *new_path;
 
@@ -45,7 +45,7 @@ char *construct_file_path(const char *directory,const char *addition){
         strcpy(new_path, directory);
         strcat(new_path, addition);
     } else {
-
+        /*If given directory path doesnt contain '/' at the end add it*/
         new_path = (char *) malloc(strlen(directory) + strlen(addition) + 2);
         if (new_path == NULL)
         {
@@ -66,9 +66,7 @@ int scan_dir(const char *directory, char ***file_arr) {
     struct dirent *file;
     char *file_path;
     char *dir_path;
-    //char **ptr;
-    //char **new_ptr;
-    static int file_num = 0;
+    static int file_num = 0; //Keep count of the number of files encountered throught the requirsion
 
     dir = opendir(directory); /*Open directory and get pointer to directory stream*/
     if (dir == NULL || directory == NULL) /*opendir return NULL on error*/
@@ -80,20 +78,20 @@ int scan_dir(const char *directory, char ***file_arr) {
 
     while ((file = readdir(dir)) != NULL) /*While we have not reached the end of the directory tree*/
     {
-        if (file->d_type == DT_DIR) {
+        if (file->d_type == DT_DIR) { /*if object in the reading directory is a directory*/
 
-            if (strcmp(file->d_name, ".") && strcmp(file->d_name, "..")) {
-                dir_path = construct_file_path(directory, file->d_name);
+            if (strcmp(file->d_name, ".") && strcmp(file->d_name, "..")) { //if directory is not the . and .. direcotries
+                dir_path = construct_file_path(directory, file->d_name); //create the path for the new directory
 
-                scan_dir(dir_path, file_arr);
-                free(dir_path);
+                scan_dir(dir_path, file_arr); //reqursive call to the new directory
+                free(dir_path); 
             }
 
-        } else if (file->d_type == DT_REG) {
+        } else if (file->d_type == DT_REG) { //if object in the reading directory is a file
            
-            file_path = construct_file_path(directory, file->d_name);
-            (*file_arr)[file_num++] = file_path;
+            file_path = construct_file_path(directory, file->d_name); //create the path for the file
 
+            (*file_arr)[file_num++] = file_path; //add the path to the file to the file_array array
             *file_arr = (char **)realloc(*file_arr, sizeof(char *)*(file_num+1)); /*add additional space in the array for 1 char pointer*/
             if (*file_arr == NULL)
             {
@@ -138,7 +136,7 @@ void infection_scan(char** file_array, int file_num) {
 
     for (i = 0; i < file_num; i++)
     {  
-       //Step 1: Compute SHA256 and MD5 hashes for every file and compare them with the known malicious library
+       //Step 1: Compute SHA256 and MD5 hashes for every file 
        sha256_hash = (char *)SHA256_file(file_array[i]); 
        md5_hash = (char *)MD5_file(file_array[i]); 
        
@@ -188,6 +186,7 @@ void infection_scan(char** file_array, int file_num) {
             }
         }
 
+        //compare them with the computed hashes to the hashes known malicious library
        if (!strcmp(sha256_hash, SHA256_malicious_lib))
        {
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[0]) + 1);
@@ -251,6 +250,7 @@ void infection_scan(char** file_array, int file_num) {
     free(infected_array);
 }
 
+/*Takes the path to a file and return the SHA256 hash of its content*/
 unsigned char *SHA256_file(const char *file){
     FILE* fp;
     unsigned char *hash;
@@ -313,6 +313,7 @@ unsigned char *SHA256_file(const char *file){
     return hash;
 }
 
+/*Takes the path to a file and return the MD5 hash of its content*/
 unsigned char *MD5_file(const char *file) {
     FILE* fp;
     unsigned char *hash;
@@ -387,11 +388,12 @@ unsigned char *MD5_file(const char *file) {
     return hash;
 }
 
+/*Takes a path to a file, the bytes string we want to search and the length of the byte string*/
 int search_bytes(const char *file, const char *bytes, int num_bytes) {
     FILE *fp;
     char *buffer;
-    int i = 0, bytes_in_file = 0, bytes_read = 0, index = 0;
-
+    int i = 0, bytes_in_file = 0, bytes_read = 0, index = 0; 
+    /*bytes_in_file = number of bytes in the file, bytes_read = number of bytes read from fread, index = the number of identical bytes of the file  */
     if (file == NULL) {
         status_update(1, "Invalid file");
         status_update(1, "Application Ended");
@@ -412,11 +414,11 @@ int search_bytes(const char *file, const char *bytes, int num_bytes) {
         exit(1);
     }
 
-    fseek(fp, 0, SEEK_END);          // Jump to the end of the file
-    bytes_in_file = ftell(fp);             // Get the current byte offset in the file
-    rewind(fp);                      // Jump back to the beginning of the file
+    fseek(fp, 0, SEEK_END);      // Jump to the end of the file
+    bytes_in_file = ftell(fp);   // Get the current byte offset in the file
+    rewind(fp);                  // Jump back to the beginning of the file
 
-    buffer = (char *) malloc(bytes_in_file); // Enough memory for the file
+    buffer = (char *) malloc(bytes_in_file); // Allocate enough memory for the file
     if (buffer == NULL)
     {
         status_update(1, "Memory Allocation failed");
@@ -434,7 +436,7 @@ int search_bytes(const char *file, const char *bytes, int num_bytes) {
     fclose(fp);
 
     index = 0;
-    for (i = 0; i < bytes_in_file; i++)
+    for (i = 0; i < bytes_in_file; i++) //Parse contents of the file
     {
         if (buffer[i] == bytes[index])
         {

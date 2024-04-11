@@ -1,6 +1,6 @@
 #ifndef _INSPECTOR_H_
-#include <regex.h> 
-#include <curl/curl.h>
+#include <regex.h>      /*Needed to filter domains from file contents*/
+#include <curl/curl.h>  /*Needed to send requests to Cloudflare if domain is malicious*/
 
 size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata);
 int inspection_scan(char **file_array, const int file_num, char ***str_array, int **paths_to_strings, char ***addresses, int **paths);

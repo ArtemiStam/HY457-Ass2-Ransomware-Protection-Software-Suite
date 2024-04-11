@@ -22,7 +22,7 @@ scan:
 	./antivirus scan /home/artemi/hy457/assignment2/Target/
 
 inspect:
-	./antivirus inspect /home/artemi/hy457/assignment2/folder/
+	./antivirus inspect /home/artemi/hy457/assignment2/Target/
 
 %.o:%.c
 	$(CC) $(CFLAGS) -o $@ -c $<
