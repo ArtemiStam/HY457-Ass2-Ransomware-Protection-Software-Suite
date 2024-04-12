@@ -9,12 +9,12 @@
 int main(int argc, char* argv[]) {
     time_t t = time(NULL);
     struct tm date = *localtime(&t);
-    char **file_arr;
-    char **str_array;
-    char **addresses;
-    int  *paths_to_strings;
-    int *paths;
-    int file_num = 0, i=0, str_num = 0;
+    char **file_arr;  /*contains file paths*/
+    char **str_array; /*contains the strings found in all the files*/
+    char **addresses; /*contains the addresses(domains) found by using a regex on the strings*/
+    int  *paths_to_strings; /*contains indexes to paths in file_array for each extracted string*/
+    int  *paths; /*contains indexes to the paths in file_array for each address that is extracted from a string*/
+    int file_num = 0, i=0;
     
     if (argc != 3)
     {
@@ -64,11 +64,11 @@ int main(int argc, char* argv[]) {
         file_num = scan_dir(argv[2], &file_arr); 
         printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Found %d files\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, file_num);
         
-        /*Search all the files in the filepath t find the regex*/
-        str_array = (char **) malloc(sizeof(char *)); /*Intialize file array with space for 1 file pointer*/
-        paths_to_strings = (int *) malloc(sizeof(int));
-        addresses = (char **) malloc(sizeof(char *)); 
-        paths = (int *) malloc(sizeof(int));
+        
+        str_array = (char **) malloc(sizeof(char *));   /*Intialize str_array with space for 1 pointer(char *) to a file path*/
+        paths_to_strings = (int *) malloc(sizeof(int)); /*Intialize paths_to_strings with space for 1 integer*/
+        addresses = (char **) malloc(sizeof(char *));   /*Initialize addresses with space for 1 pointer(char *) to an address/domain*/
+        paths = (int *) malloc(sizeof(int));            /*Initialize paths with space for 1 integer*/
         if (str_array == NULL || paths_to_strings == NULL || addresses == NULL || paths == NULL)
         {
             status_update(1, "Memory Allocation Failed");
@@ -76,32 +76,15 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
 
-
-        str_num = inspection_scan(file_arr, file_num, &str_array, &paths_to_strings, &addresses, &paths);
-        /*addr_num = extract_addresses(str_array, &addresses, str_num);
-        for (i = 0; i < addr_num; i++)
-        {
-            //printf("%s\n", file_arr[paths_to_strings[i]]);
-            printf("%s\n", addresses[i]);
-        }
-        printf("%d\n",addr_num);*/
-        /*Free file and string array*/
+        /*Inspect files for virus signature, bitcoin wallet and malicious libraries*/
+        inspection_scan(file_arr, file_num, &str_array, &paths_to_strings, &addresses, &paths);
+        
         for (i = 0; i < file_num; i++)
         {
             free(file_arr[i]);
         }
         free(file_arr);
-        /*free(paths_to_strings);
-        for (i = 0; i < str_num; i++)
-        {
-            free(str_array[i]);
-        }
-        free(str_array);*/
-        /*free(paths_to_strings);
-        free(paths);*/
-
-       /*No need to free paths of strings because they contain the pointers from file_array
-       we just need to free the paths_to_strings ptr*/
+       
     } else if (!strcmp(argv[1], "monitor")) {
 
     } else {

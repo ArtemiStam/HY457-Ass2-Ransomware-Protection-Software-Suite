@@ -10,20 +10,21 @@ struct Memory {
   size_t size;
 };
 
+/*Gets called when curllib receives response and writes the response to a Memory struct object*/
 size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
 {
     size_t realsize = size * nmemb;
-    struct Memory *mem = (struct Memory *)userdata;
+    struct Memory *mem = (struct Memory *)userdata; //since function signature has void * for the insput data we need to assign it to a struct Memory type variable to manipulate it
 
-    char *ptr = realloc(mem->data, mem->size + realsize + 1);
+    char *ptr = realloc(mem->data, mem->size + realsize + 1); // allocate size for the input data
     if (!ptr) {
         printf("not enough memory (realloc returned NULL)\n");
         return 0; /* out of memory! */
     }
-    mem->data = ptr;
-    memcpy(&(mem->data[mem->size]), data, realsize);
-    mem->size += realsize;
-    mem->data[mem->size] = '\0';
+    mem->data = ptr; 
+    memcpy(&(mem->data[mem->size]), data, realsize); // copy data in allocated memory
+    mem->size += realsize; 
+    mem->data[mem->size] = '\0'; // data is not null terminated so we make it to use it as a string
 
     return realsize;
 }
@@ -51,7 +52,7 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
         if ((str_num = extract_strings(file_array[i], str_array, total_strs)) > 0) /*add strings to str_array*/
         {
             total_strs = total_strs + str_num;
-            *paths_to_strings = realloc(*paths_to_strings, sizeof(int) * (total_strs + 1));
+            *paths_to_strings = realloc(*paths_to_strings, sizeof(int) * (total_strs + 1)); 
             if (*paths_to_strings == NULL)
             {
                 status_update(1, "Memory Reallocation Failed");
@@ -61,7 +62,7 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
 
             for (j = total_strs - str_num; j < total_strs; j++)
             {
-                (*paths_to_strings)[j] = i;
+                (*paths_to_strings)[j] = i;  // add to path_to_strings an index that represents this files path to every string extracted from the file   
             }
         }
     }
@@ -78,10 +79,9 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
     free(*paths_to_strings); 
     
     malicious_addr = malloc(sizeof(int) * addr_num);
-    /*Using CURLlib to do a GET request*/
     for (i = 0; i < addr_num; i++)
     {
-        malicious_addr[i] = check_malicious((*addresses)[i]);
+        malicious_addr[i] = check_malicious((*addresses)[i]); /*Check if extracted domains/addresses are malicious*/
     }
     status_update(0, "Operation finished");
     printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Processed %d files.\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, file_num);
@@ -89,14 +89,8 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
     /*Print output*/
     printf("\n| %-20s | %-80s | %-50s| %-10s |\n", "FILE", "PATH", "DOMAIN", "RESULT");
     printf("============================================================================================================================================================================\n");
-    /*for (i = 0; i < addr_num; i++) {
-        printf("%s\n", file_array[(*paths)[i]]);
-    }*/
     for (i = 0; i < addr_num; i++)
     {
-        //printf("%s\n", file_array[(*paths)[i]]);
-        //printf("%s\n", (*addresses)[i]);
-        //printf("Malicious: %d\n", malicious_addr[i]);
         length = strlen(file_array[(*paths)[i]]);   
         string = malloc(length+1);
 
@@ -126,7 +120,6 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
     //free(*paths_to_strings);
     free(malicious_addr);
     return total_strs;
-    /*After we get the strings we need to use regexto get domains*/
 }
 
 int extract_strings(const char *file, char ***str_array, int total_strs)
@@ -186,7 +179,7 @@ int extract_strings(const char *file, char ***str_array, int total_strs)
         if ((buffer[i] <= 126) && (buffer[i] >= 32))
         {
             printable_chars++;
-            if (str_len == 0)
+            if (str_len == 0) // when first printable char is encountered, malloc space for it 
             {
                 string = (char *)malloc(1);
                 if (string == NULL)
@@ -197,8 +190,8 @@ int extract_strings(const char *file, char ***str_array, int total_strs)
                 }
             }
 
-            string[str_len++] = buffer[i];
-            string = (char *)realloc(string, str_len + 1);
+            string[str_len++] = buffer[i]; 
+            string = (char *)realloc(string, str_len + 1); // allocate space for the next printable char
             if (string == NULL)
             {
                 status_update(1, "Memory Reallocation Failed");
@@ -206,7 +199,7 @@ int extract_strings(const char *file, char ***str_array, int total_strs)
                 exit(1);
             }
 
-            if ((printable_chars == bytes_in_file) && (str_len >= 4))
+            if ((printable_chars == bytes_in_file) && (str_len >= 4)) // if this is the last byte of the file and the string collected so far has 4 or more chars add it to the string array
             {
                 str_num++;
                 string[str_len] = '\0';
@@ -222,12 +215,12 @@ int extract_strings(const char *file, char ***str_array, int total_strs)
         }
         else
         {
-            if (str_len >= 4)
+            if (str_len >= 4) // if the collected string is 4 or more chars
             {
                 str_num++;
                 string[str_len] = '\0';
-                (*str_array)[total_strs++] = string;
-                *str_array = (char **)realloc(*str_array, sizeof(char *) * (total_strs + 1));
+                (*str_array)[total_strs++] = string; //add it to string array
+                *str_array = (char **)realloc(*str_array, sizeof(char *) * (total_strs + 1));  
                 if (*str_array == NULL)
                 {
                     status_update(1, "Memory Reallocation Failed");
@@ -235,12 +228,12 @@ int extract_strings(const char *file, char ***str_array, int total_strs)
                     exit(1);
                 }
             }
-            if (str_len < 4 && str_len > 0)
+            if (str_len < 4 && str_len > 0) 
             {
                 free(string);
             }
 
-            str_len = 0;
+            str_len = 0; // reset the length coutner to zero for the next string
         }
     }
 
@@ -265,7 +258,7 @@ int extract_addresses(char **str_array, char ***addresses, int str_num, int *pat
     char *s;
     char *buf = NULL;
 
-    strcpy(re, "((www.))?[-a-zA-Z0-9.]+\\.(net|com|gr|org){1}[-a-zA-Z0-9./]*");
+    strcpy(re, "((www.))?[-a-zA-Z0-9.]+\\.(net|com|gr|org){1}[-a-zA-Z0-9./]*"); //set the regex we want to extract the addresses
 
     if (str_array == NULL || addresses == NULL || paths_to_strings == NULL || paths == NULL)
     {
@@ -284,11 +277,11 @@ int extract_addresses(char **str_array, char ***addresses, int str_num, int *pat
         exit(1);
     }
 
-    for (i = 0; i < str_num; i++)
+    for (i = 0; i < str_num; i++) //for every string in the string array
     {
         buf = str_array[i];
         s = buf;
-        while (1)
+        while (1) //while regex doesnt return REG_NOMATCH
         {
             if ((ret = regexec(&regex, s, ARRAY_SIZE(pmatch), pmatch, 0)) == 1)
             {
@@ -301,29 +294,21 @@ int extract_addresses(char **str_array, char ***addresses, int str_num, int *pat
                 break;
             }
 
-            // offset = pmatch[0].rm_so + (s - buf);
-            // printf("address = %s\n",s + pmatch[0].rm_so);
-            length = pmatch[0].rm_eo - pmatch[0].rm_so;
-            //if (!check_duplicates(*addresses, s + pmatch[0].rm_so, addr_num, length))
-            //{
-                (*paths)[addr_num] = paths_to_strings[i];
-                (*addresses)[addr_num] = malloc(length + 1);
-                (*addresses)[addr_num][length] = '\0';
-                memcpy((*addresses)[addr_num++], s + pmatch[0].rm_so, length);
-                *paths = realloc(*paths, sizeof(int) * (addr_num + 1));
-                *addresses = realloc(*addresses, sizeof(char *) * (addr_num + 1));
-                if (*addresses == NULL || *paths == NULL)
-                {
-                    status_update(1, "Memory Reallocation Failed");
-                    status_update(1, "Application Ended");
-                    exit(1);
-                }
-                // s += pmatch[0].rm_eo;
-            //}
+            length = pmatch[0].rm_eo - pmatch[0].rm_so; //find length of extract
+            (*paths)[addr_num] = paths_to_strings[i]; //save the path to the file that the address/domain has beeen extracted from
+            (*addresses)[addr_num] = malloc(length + 1);
+            (*addresses)[addr_num][length] = '\0';
+            memcpy((*addresses)[addr_num++], s + pmatch[0].rm_so, length); //copy the extracted address/domain to the addresses array
+            *paths = realloc(*paths, sizeof(int) * (addr_num + 1)); //realloc an extra space for the next path
+            *addresses = realloc(*addresses, sizeof(char *) * (addr_num + 1)); //realloc an extra space for the next *address
+            if (*addresses == NULL || *paths == NULL)
+            {
+                status_update(1, "Memory Reallocation Failed");
+                status_update(1, "Application Ended");
+                exit(1);
+            }
+
             s += pmatch[0].rm_eo;
-            // s += pmatch[0].rm_eo;
-            // printf("offset = %jd; length = %jd\n", (intmax_t)offset, (intmax_t)length);
-            // printf("address = \"%.*s\"\n", length, s + pmatch[0].rm_so);
         }
     }
 
@@ -360,15 +345,15 @@ int check_malicious(char *address){
         exit(1);
     }
     
-    url = malloc(strlen(str) + strlen(address) + 1);
-    response.data = malloc(1);
+    url = malloc(strlen(str) + strlen(address) + 1); // allcoate string for the url we want to send a request to
+    response.data = malloc(1); // allocate space for the data we are going to receive
     response.size = 0;
     if (url == NULL || response.data == NULL) {
         status_update(1, "Memory Allocation Failed");
         status_update(1, "Application Ended");
         exit(1);
     }
-    strcpy(url,str);
+    strcpy(url,str); 
     strcat(url, address);
     curl = curl_easy_init();
     if (!curl) {
@@ -378,15 +363,15 @@ int check_malicious(char *address){
     }
     curl_easy_setopt(curl, CURLOPT_URL, url);
     list = curl_slist_append(list, "accept: application/dns-json");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response);
-    rc = curl_easy_perform(curl);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list); // add header in list to the headers of the packet to be sent
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback); // set function to be called when response comes
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response); // set input data for write_callback
+    rc = curl_easy_perform(curl); //perform request
     if (rc != CURLE_OK) {
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(rc));
     }
     
-    if (strstr(response.data,  "\"Comment\":[\"EDE(16): Censored\"]") != NULL) {
+    if (strstr(response.data,  "\"Comment\":[\"EDE(16): Censored\"]") != NULL) { // search response for malicious indicator
         curl_slist_free_all(list); 
         curl_easy_cleanup(curl);
         free(url);
