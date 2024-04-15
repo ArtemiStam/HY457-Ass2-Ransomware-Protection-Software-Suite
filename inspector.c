@@ -87,8 +87,8 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
     printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Processed %d files.\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, file_num);
 
     /*Print output*/
-    printf("\n| %-20s | %-80s | %-50s| %-10s |\n", "FILE", "PATH", "DOMAIN", "RESULT");
-    printf("============================================================================================================================================================================\n");
+    printf("\n| %-20s | %-80s | %-50s| %-11s |\n", "FILE", "PATH", "DOMAIN", "RESULT");
+    printf("=============================================================================================================================================================================\n");
     for (i = 0; i < addr_num; i++)
     {
         length = strlen(file_array[(*paths)[i]]);   
@@ -107,7 +107,7 @@ int inspection_scan(char **file_array, const int file_num, char ***str_array, in
             exit(1);
         }
         file_name[0] = '\0';
-        printf("| %-20s | %-80s | %-50s| %-10s |\n", file_name+1, string, (*addresses)[i], malicious_addr[i] ? "\033[0;31mMalicious\033[0m " : "Safe");
+        printf("| %-20s | %-80s | %-50s| %-22s |\n", file_name+1, string, (*addresses)[i], malicious_addr[i] ? "\033[0;31mMalicious\033[0m " : "\033[0;32mSafe\033[0m");
         free(string);
     }
 

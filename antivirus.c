@@ -4,6 +4,7 @@
 #include <string.h> 
 #include "scanner.h"
 #include "inspector.h"
+#include "monitor.h"
 
 
 int main(int argc, char* argv[]) {
@@ -86,7 +87,9 @@ int main(int argc, char* argv[]) {
         free(file_arr);
        
     } else if (!strcmp(argv[1], "monitor")) {
-
+        status_update(0, "Application Started");
+        //printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Monitoring directory %s\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, argv[2]);
+        event_listener(argv[2]);
     } else {
         status_update(1, "UNDEFINED ACTION\033[0m Available actions are: \033[0;36mscan inspect monitor\033[0m");
         status_update(1, "Application Ended");
