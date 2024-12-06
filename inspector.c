@@ -10,7 +10,7 @@ struct Memory {
   size_t size;
 };
 
-/*Gets called when curllib receives response and writes the response to a Memory struct object*/
+
 size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
 {
     size_t realsize = size * nmemb;
@@ -258,7 +258,7 @@ int extract_addresses(char **str_array, char ***addresses, int str_num, int *pat
     char *s;
     char *buf = NULL;
 
-    strcpy(re, "((www.))?[-a-zA-Z0-9.]+\\.(net|com|gr|org){1}[-a-zA-Z0-9./]*"); //set the regex we want to extract the addresses
+    strcpy(re, "((www.))?[-a-zA-Z0-9]+\\.(net|com|gr|org)"); //set the regex we want to extract the addresses, last regex: "((www.))?[-a-zA-Z0-9.]+\\.(net|com|gr|org){1}[-a-zA-Z0-9./]*"
 
     if (str_array == NULL || addresses == NULL || paths_to_strings == NULL || paths == NULL)
     {

@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
     long val;
     char *p;
     int **coeff;
+    int **temp;
     int int_array[4];
 
     if (argc < 3)
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        /*Inspect files for virus signature, bitcoin wallet and malicious libraries*/
+        /*Inspect files for malicious domains*/
         inspection_scan(file_arr, file_num, &str_array, &paths_to_strings, &addresses, &paths);
 
         for (i = 0; i < file_num; i++)
@@ -95,27 +96,24 @@ int main(int argc, char *argv[])
     else if (!strcmp(argv[1], "monitor"))
     {
         status_update(0, "Application Started");
-        // printf("[%s] [%d] [%02d-%s-%02d %02d:%02d:%02d] Monitoring directory %s\n", "INFO", getpid(), date.tm_mday, MONTH_STRING[date.tm_mon], date.tm_year+1900, date.tm_hour, date.tm_min, date.tm_sec, argv[2]);
-        event_listener(argv[2]);
+        event_listener(argv[2]); /*Start listening to events*/
     }
     else if (!strcmp(argv[1], "slice"))
     {
         status_update(0, "Application Started");
-        // fprintf(stderr, "%s", argv[2]);
-        /*if (isnumber(argv[2]) > 0) //is numeric
+        
+        if (atoi(argv[2]) <= 0) //input is not numeric
         {
-            fprintf(stderr, "hereee");*/
+            status_update(1, "Input must be numeric");
+            status_update(1, "Application Ended");
+            exit(1);
+        }
         secret = atoi(argv[2]);
-        //} else {
-        // secret = argv[2];
-        // status_update(1, "Secret is not an integer");
-        //}
-        // fprintf(stderr, "%d", secret);
-        slice_secret(secret, 10, 3);
+        
+        slice_secret(secret, 10, 3); /* Create 10 shares of the secret so that at least 3 people can access the secret*/
     }
     else if (!strcmp(argv[1], "unlock"))
     {
-        // printf("%s", argv[2]);
         if (argc < 5)
         {
             status_update(1, "Need at least 3 different shares");
@@ -135,20 +133,21 @@ int main(int argc, char *argv[])
         {
             count = 0; // for error checking
             p = argv[i];
-            while (*p)
-            { // While there are more characters to process...
-                if (isdigit(*p) || ((*p == '-' || *p == '+') && isdigit(*(p + 1))))
+            while (*p) // While there are more characters to process
+            {   
+                if (isdigit(*p) || ((*p == '-' || *p == '+') && isdigit(*(p + 1)))) //if we find a digit or +,- and a digit after
                 {
                     // Found a number
                     val = strtol(p, &p, 10); // Read number
                     count++;
-                    if (count == 1 && *p != ',') // after the first number we want a comma ','
+                    if (count == 1 && *p != ',') // after the first number we always want a comma ','
                     {
                         status_update(1, "Input must be: x,y");
                         status_update(1, "Application Ended");
                         exit(1);
                     }
 
+                    /*Create array [val^2, val, 1, val2(second val)] it translates to f(val) = a*(val^2) + b*val + 1*c = val2*/
                     if (count == 1) //first number
                     {
                         int_array[0] = pow(val,2);
@@ -157,8 +156,6 @@ int main(int argc, char *argv[])
                     } else if (count == 2){ //second number
                         int_array[3] = val;
                     }
-                    
-                    printf("%ld\n", val);
                 }
                 else
                 {                    
@@ -173,7 +170,7 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            coeff[i-2] = malloc(sizeof(int)*4);
+            coeff[i-2] = malloc(sizeof(int)*4); // malloc space for an array of 4 ints 
             if (coeff[i-2] == NULL)
             {
                 exit(1);
@@ -182,30 +179,32 @@ int main(int argc, char *argv[])
             {
                 coeff[i-2][j] = int_array[j];
             }
-            
         }
 
-        for ( i = 0; i < argc-2; i++)
+        /*for ( i = 0; i < argc-2; i++) //print 2d array
         {
-            printf("[ %d, %d, %d, %d]\n", coeff[i][0], coeff[i][1], coeff[i][2], coeff[i][3]);
-        }
+            printf("[%d, %d, %d, %d]\n", coeff[i][0], coeff[i][1], coeff[i][2], coeff[i][3]);
+        }*/
         
-        findSolution(coeff);
-        /*while(!findSolution()) {
-            if (argc - 2 == 3)
+        temp = coeff;
+        i = 0;
+        /*if the system cant be solved with the first three shares try the next three if there are any*/
+        while(!solve_system(temp) && i < argc-2) {
+            i++;
+            temp = &temp[i];
+            if (argc - 2 == 3 || argc - i < 3)
             {
                 status_update(1, "Incorrect input values, no solution found");
                 status_update(1, "Application Ended");
                 exit(1);
             }
-        }*/
-        /*{ x^2, x, 1, y }*/
-        for (i = 0; i < argc-2; i++)
+        }
+        
+        for (i = 0; i < argc-2; i++) //free array of coefficients
         {
             free(coeff[i]);
         }
         free(coeff);
-        
     }
     else
     {

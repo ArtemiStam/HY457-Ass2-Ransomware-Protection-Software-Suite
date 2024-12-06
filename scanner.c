@@ -102,6 +102,7 @@ int scan_dir(const char *directory, char ***file_arr) {
 
 void infection_scan(char** file_array, int file_num) {
     int i = 0, infected_num = 0;
+    int state = 0, num_infected_files = 0;
     char *sha256_hash;
     char *md5_hash;
     char *infected_file_update;
@@ -129,8 +130,11 @@ void infection_scan(char** file_array, int file_num) {
        md5_hash = (char *)MD5_file(file_array[i]); 
        
        //Step 2: Search for the signature of the known virus
+        state = 0;
         if (search_bytes(file_array[i], virus_signature, 16))
         {
+            state = 1; //found virus in file
+            num_infected_files++;
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[3]) + 1);  // allocate memory for the output message
             if (infected_file_update == NULL)
             {
@@ -154,6 +158,11 @@ void infection_scan(char** file_array, int file_num) {
        //Step 3: Search for the reported Bitcoin address
        if (search_bytes(file_array[i], bitcoin_wallet, strlen(bitcoin_wallet)))
         {
+            if (state == 0) //if there wasnt a virus detected before
+            {
+                num_infected_files++;
+            }
+            
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[2]) + 1); // allocate memory for the output message
             if (infected_file_update == NULL)
             {
@@ -177,6 +186,7 @@ void infection_scan(char** file_array, int file_num) {
         //compare the computed hashes to the hashes of the known malicious library
        if (!strcmp(sha256_hash, SHA256_malicious_lib))
        {
+            num_infected_files++;
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[0]) + 1); // allocate memory for the output message
             if (infected_file_update == NULL)
             {
@@ -197,6 +207,7 @@ void infection_scan(char** file_array, int file_num) {
             }
             
         } else if (!strcmp(md5_hash, MD5_malicious_lib)) {
+            num_infected_files++;
             infected_file_update = (char *) malloc(strlen(file_array[i]) + strlen(infection_type[1]) + 1); // allocate memory for the output message
             if (infected_file_update == NULL)
             {
@@ -222,7 +233,7 @@ void infection_scan(char** file_array, int file_num) {
     }
 
     status_update(0, "Operation finished");
-    sprintf(update_message, "Processed %d files. \033[0;31mFound %d infected\033[0m", file_num, infected_num);
+    sprintf(update_message, "Processed %d files. \033[0;31mFound %d infected\033[0m", file_num, num_infected_files);
     status_update(0, update_message);
 
     for (i = 0; i < infected_num; i++)

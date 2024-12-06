@@ -4,6 +4,7 @@
 struct inot_event {
     char *name;
     int type;
+    int enable;
 };
 
 void event_listener(char *directory) {
@@ -34,7 +35,7 @@ void event_listener(char *directory) {
     }
 
     /* Allocate memory for watch descriptors. */
-    wd = inotify_add_watch(fd, directory, IN_CREATE | IN_OPEN | IN_ACCESS | IN_MODIFY | IN_CLOSE | IN_DELETE);
+    wd = inotify_add_watch(fd, directory, IN_CREATE | IN_OPEN | IN_ACCESS | IN_MODIFY | IN_CLOSE | IN_DELETE); // Watch for events of type: create,open,access,modify,close,delete
     if (wd == -1)
     {
         status_update(1, "inotify_add_watch failed");
@@ -42,7 +43,7 @@ void event_listener(char *directory) {
         exit(1);
     }
     
-    events = (struct inot_event *) malloc (sizeof(struct inot_event)*1048576);
+    events = (struct inot_event *) malloc (sizeof(struct inot_event)*1048576); //allocate memory for max number of events
     if (events == NULL)
     {
         status_update(1, "Memory Allocation Failed");
@@ -73,15 +74,15 @@ void event_listener(char *directory) {
 
         if (poll_num > 0)
         {
-            if (fds[0].revents & POLLIN)
+            if (fds[0].revents & POLLIN) // Console input event occured
             {
                 // Console input is available. Empty stdin and quit. 
-                while (read(STDIN_FILENO, &buf, 1) > 0 && buf != '\n')
+                while (read(STDIN_FILENO, &buf, 1) > 0 && buf != '\n') // read event into buffer, event is enter quit
                     continue;
                 break;
             }
 
-            if (fds[1].revents & POLLIN)
+            if (fds[1].revents & POLLIN) // Inotify input event occured
             {
                 /* Inotify events are available. */
                 handle_events(fd, wd, 1, directory, events, &current_event);
@@ -89,6 +90,7 @@ void event_listener(char *directory) {
         }
     }
     inotify_rm_watch(fd, wd);
+    free(events);
     close(fd);
 }
 
@@ -97,6 +99,7 @@ void handle_events(int fd, int wd, int argc, char *directory, struct inot_event 
         __attribute__((aligned(__alignof__(struct inotify_event))));
     const struct inotify_event *event;
     ssize_t len;
+    int i = 0;
     
     /* Loop while events can be read from inotify file descriptor. */
     while(1)
@@ -121,13 +124,13 @@ void handle_events(int fd, int wd, int argc, char *directory, struct inot_event 
         for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len)
         {
             event = (const struct inotify_event *)ptr;
-            if (event->mask & IN_ISDIR)
+            if (event->mask & IN_ISDIR) /* If event is about a directory ignore */
             {
                 continue;
             }
-            else
+            else /* Event is about a file */
             {
-                /* Print event type. */
+                /* Print event type and save events that could signify ransomware */
                 if (event->mask & IN_CREATE)
                 {
                     printf("File '%s' was created\n", event->name);
@@ -139,24 +142,9 @@ void handle_events(int fd, int wd, int argc, char *directory, struct inot_event 
                         exit(1);
                     }
                     strcpy(events[*current_event].name, event->name);
-                    events[(*current_event)++].type = IN_CREATE;
-
-                    /*if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
-
-                    /*if (detect_ransomware(events,(const char *) event->name, *current_event)) {
-                        status_update(1, "Ransomware Detected");
-                    }*/
-                    // break;
+                    //events[(*current_event)++].type = IN_CREATE;
+                    events[(*current_event)].type = IN_CREATE;
+                    events[(*current_event)++].enable = 1;
                 }
 
                 if (event->mask & IN_OPEN)
@@ -170,48 +158,14 @@ void handle_events(int fd, int wd, int argc, char *directory, struct inot_event 
                         exit(1);
                     }
                     strcpy(events[*current_event].name, event->name);
-                    events[(*current_event)++].type = IN_OPEN;
-
-                    /*if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
-                    /*if (detect_ransomware(events,(const char *) event->name, *current_event)) {
-                        status_update(1, "Ransomware Detected");
-                    }*/
+                    //events[(*current_event)++].type = IN_OPEN;
+                    events[(*current_event)].type = IN_OPEN;
+                    events[(*current_event)++].enable = 1;
                 }
 
                 if (event->mask & IN_ACCESS)
                 {
                     printf("File '%s' was accessed\n", event->name);
-                    /*events[current_event].name = malloc(strlen(event->name) + 1);
-                    if (events[current_event].name == NULL)
-                    {
-                        status_update(1, "Memory Allocation Failed");
-                        status_update(1, "Application Ended");
-                        exit(1);
-                    }
-                    strcpy(events[current_event].name, event->name);
-                    events[current_event].type = IN_ACCESS;
-
-                    if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
                 }
 
                 if (event->mask & IN_MODIFY)
@@ -225,74 +179,19 @@ void handle_events(int fd, int wd, int argc, char *directory, struct inot_event 
                         exit(1);
                     }
                     strcpy(events[*current_event].name, event->name);
-                    events[(*current_event)++].type = IN_MODIFY;
-
-                    /*if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
-                    /*if (detect_ransomware(events,(const char *) event->name, *current_event)) {
-                        status_update(1, "Ransomware Detected");
-                    }*/
+                    //events[(*current_event)++].type = IN_MODIFY;
+                    events[(*current_event)].type = IN_MODIFY;
+                    events[(*current_event)++].enable = 1;
                 }
 
                 if (event->mask & IN_CLOSE_NOWRITE)
                 {
                     printf("File '%s' that was not opened for writing was closed\n", event->name);
-                    /*events[current_event].name = malloc(strlen(event->name) + 1);
-                    if (events[current_event].name == NULL)
-                    {
-                        status_update(1, "Memory Allocation Failed");
-                        status_update(1, "Application Ended");
-                        exit(1);
-                    }
-                    strcpy(events[current_event].name, event->name);
-                    events[current_event].type = IN_CLOSE;
-
-                    if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
                 }
 
                 if (event->mask & IN_CLOSE_WRITE)
                 {
                     printf("File '%s' that was opened for writing was closed\n", event->name);
-                    /*events[current_event].name = malloc(strlen(event->name) + 1);
-                    if (events[current_event].name == NULL)
-                    {
-                        status_update(1, "Memory Allocation Failed");
-                        status_update(1, "Application Ended");
-                        exit(1);
-                    }
-                    strcpy(events[current_event].name, event->name);
-                    events[current_event].type = IN_CLOSE;
-
-                    if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
                 }
 
                 if (event->mask & IN_DELETE)
@@ -306,74 +205,26 @@ void handle_events(int fd, int wd, int argc, char *directory, struct inot_event 
                         exit(1);
                     }
                     strcpy(events[*current_event].name, event->name);
-                    events[(*current_event)++].type = IN_DELETE;
+                    //events[(*current_event)++].type = IN_DELETE;
+                    events[(*current_event)].type = IN_DELETE;
+                    events[(*current_event)++].enable = 1;
 
-                    /*if (current_event++ == count)
-                    {
-                        count += 1024;
-                        events = realloc(events, sizeof(struct inot_event)*count);
-                        if (events == NULL)
-                        {
-                            status_update(1, "Memory Allocation Failed");
-                            status_update(1, "Application Ended");
-                            exit(1);
-                        }
-                    }*/
-                    //printf("current event: %d\n", *current_event);
-                    if (detect_ransomware(events,(const char *) event->name, *current_event)) {
-
-                        //printf("HEREEEEEEEE%s\n", event->name);
-                        //status_update(1, "Ransomware Detected");
+                    if (detect_ransomware(events,(const char *) event->name, *current_event)) { // After deletion of a file ransomware could occur
                         printf("\033[0;31m[WARN]  Ransomware attack detected on file %s\033[0m\n", event->name);
-
                     } 
+
+                    for (i = 0; i < *current_event; i++)
+                    {
+                        if (!strcmp(events[i].name, event->name))
+                        {
+                            events[i].enable = 0;
+                        }
+                        
+                    }
+                    
                 }
             }
         }
-        /*while(i < len)//for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len)
-        {
-            i = 0;
-            event = (const struct inotify_event *)&buf[i];
-            if (event->len)
-            {
-                if (event->mask & IN_ISDIR)
-                {
-                    continue;
-                }
-                else
-                {
-                    // IN_CLOSE | IN_ACCESS | IN_OPEN | IN_CREATE | IN_MODIFY | IN_CLOSE_WRITE | IN_CLOSE_NOWRITE | IN_DELET
-        
-                    if (event->mask & IN_CREATE)
-                    {
-                        printf("File '%s' was created\n", event->name);
-                        break;
-                    }
-                    if (event->mask & IN_OPEN) {
-                        printf("File '%s' was opened\n", event->name);
-                        break;
-                    }
-                    if (event->mask & IN_ACCESS) {
-                        printf("File '%s' was accessed\n", event->name);
-                        break;
-                    }
-                    if (event->mask & IN_MODIFY)
-                    {
-                       
-                        printf("File '%s' was modified\n", event->name);
-                        break;
-                        
-                    }
-                    if (event->mask & IN_DELETE)
-                    {
-                        printf("File '%s' was deleted\n", event->name);
-                        break;
-                    }
-                    i+= sizeof(struct inotify_event) + event->len;
-                }
-            }
-            
-        }*/
     }
 }
 
@@ -388,6 +239,7 @@ int detect_ransomware(struct inot_event *events, const char *file_name, int num_
         exit(1);
     }
 
+    /* Create file name appended with ".locked" */
     name_locked = malloc(strlen(file_name) + strlen(".locked") + 1);
     if (name_locked == NULL)
     {
@@ -397,27 +249,24 @@ int detect_ransomware(struct inot_event *events, const char *file_name, int num_
     }
     strcpy(name_locked, file_name);
     strcat(name_locked, ".locked");
-    //printf("%s\n", name_locked);
     
-    /*open, create, modify, delete*/
+    /* Search in reverse order for ransomware event sequence: delete file_name, modify file_name.locked, create file_name.locked, open file_name */
     for (i = num_events - 1; i >= 0 ; i--)
     {
-        if (steps == 0 && !strcmp(events[i].name, file_name) && events[i].type == IN_DELETE)
+        if (steps == 0 && !strcmp(events[i].name, file_name) && events[i].type == IN_DELETE && events[i].enable == 1)
             steps++;
 
-        if (steps == 1 && !strcmp(events[i].name, name_locked) && events[i].type == IN_MODIFY)
+        if (steps == 1 && !strcmp(events[i].name, name_locked) && events[i].type == IN_MODIFY && events[i].enable == 1)
             steps++;
         
-        if (steps == 2 && !strcmp(events[i].name, name_locked) && events[i].type == IN_CREATE)
+        if (steps == 2 && !strcmp(events[i].name, name_locked) && events[i].type == IN_CREATE && events[i].enable == 1)
             steps++;
 
-        if (steps == 3 && !strcmp(events[i].name, file_name) && events[i].type == IN_OPEN)
+        if (steps == 3 && !strcmp(events[i].name, file_name) && events[i].type == IN_OPEN && events[i].enable == 1)
             steps++;
 
-        if (steps >= 4) 
+        if (steps >= 4) // Multiple modify or open events could occur so we test for steps > 4 and steps = 4.
             return 1;
-
-        //printf("%d\n", steps);
     }
     
     return 0;
